@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Callback Form</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
+    <style>
+        /* Basic Styles */
+        .callback-form {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: white;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+            width: 300px;
+        }
+        .callback-form h2 {
+            margin-top: 0;
+        }
+        .callback-form input {
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0;
+        }
+        .callback-form button {
+            padding: 10px;
+            width: 100%;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        .callback-form button:hover {
+            background-color: #45a049;
+        }
+        .close-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 25px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Callback Button -->
+    <button id="callbackBtn">📞 Request a Callback</button>
+
+    <!-- Callback Form (Initially Hidden) -->
+    <div class="callback-form" id="callbackForm">
+        <span class="close-btn" id="closeForm">&times;</span>
+        <h2>Request a Callback</h2>
+        <form id="callbackFormData">
+            <label for="name">Name:</label>
+            <input type="text" name="name" id="name" placeholder="Enter your name" required>
+
+            <label for="contact">Contact No:</label>
+            <input type="tel" name="contact_number" id="contact_number" placeholder="Enter your contact number" required>
+
+            <label for="email">Email:</label>
+            <input type="email" name="email" id="email" placeholder="Enter your email" required>
+
+            <button type="submit">Submit</button>
+        </form>
+    </div>
+
+    <script>
+        // Data array to store callback form submissions
+        let callbackData = JSON.parse(localStorage.getItem('callbackData')) || [];
+
+        // Show the form when the callback button is clicked
+        document.getElementById("callbackBtn").addEventListener("click", function() {
+            document.getElementById("callbackForm").style.display = "block";
+        });
+
+        // Close the form when the close button is clicked
+        document.getElementById("closeForm").addEventListener("click", function() {
+            document.getElementById("callbackForm").style.display = "none";
+        });
+
+        // Handle form submission
+        document.getElementById("callbackFormData").addEventListener("submit", function(event) {
+            event.preventDefault(); // Prevent form from submitting the usual way
+
+            // Get the form data
+            const name = document.getElementById("name").value;
+            const contactNumber = document.getElementById("contact_number").value;
+            const email = document.getElementById("email").value;
+
+            // Add new data to the array
+            callbackData.push({ Name: name, Contact: contactNumber, Email: email });
+
+            // Save the data to localStorage to persist across page reloads
+            localStorage.setItem('callbackData', JSON.stringify(callbackData));
+
+            // Hide the form after submission
+            document.getElementById("callbackForm").style.display = "none";
+
+            // Reset the form
+            document.getElementById("callbackFormData").reset();
+
+            // Optionally alert the user that the form was submitted
+            alert("Your request has been submitted!");
+
+            // Auto-download Excel after the submission
+            exportToExcel();
+        });
+
+        // Function to export data to an Excel file
+        function exportToExcel() {
+            // Convert the array of data to a worksheet
+            var ws = XLSX.utils.json_to_sheet(callbackData);
+
+            // Set column widths dynamically based on the data length
+            var columnWidths = [];
+            Object.keys(ws).forEach(function(key) {
+                if (key[0] === '!') return; // Skip metadata keys (like row numbers)
+                var cellValue = ws[key].v ? ws[key].v.toString() : '';
+                var length = cellValue.length;
+                columnWidths[key.charCodeAt(0) - 65] = Math.max(columnWidths[key.charCodeAt(0) - 65] || 0, length);
+            });
+
+            // Apply calculated column widths to the worksheet
+            ws['!cols'] = columnWidths.map(function(width) {
+                return { wch: width + 2 }; // Add extra padding
+            });
+
+            // Create a new workbook
+            var wb = XLSX.utils.book_new();
+
+            // Append the worksheet to the workbook
+            XLSX.utils.book_append_sheet(wb, ws, "Callback Data");
+
+            // Generate the Excel file and trigger the download
+            XLSX.writeFile(wb, "callback_data.xlsx");
+        }
+    </script>
+</body>
+</html>
